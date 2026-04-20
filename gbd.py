@@ -44,10 +44,29 @@ def get_book_data(url):
     driver.get(url)
     driver.refresh()
     sleep(2)
-    title = driver.find_element(By.CLASS_NAME, "gb-volume-title").text
-    author = driver.find_element(By.CLASS_NAME, "addmd").text
 
-    return f"{title} (b{author[1:]})"
+    title = ""
+    author = ""
+    try:
+        title = driver.find_element(By.CLASS_NAME, "gb-volume-title").text
+    except Exception:
+        pass
+    try:
+        author = driver.find_element(By.CLASS_NAME, "addmd").text
+    except Exception:
+        pass
+
+    if not title:
+        page_title = (driver.title or "").strip()
+        for suffix in (" - Google Books", " – Google Books"):
+            if page_title.endswith(suffix):
+                page_title = page_title[: -len(suffix)]
+        title = page_title or re.findall(r"id=([A-Za-z0-9]+)", url)[-1]
+
+    safe = re.sub(r'[\\/:*?"<>|]+', "_", title).strip()
+    if author:
+        return f"{safe} (b{author[1:]})"
+    return safe
 
 def capture_requests(url):
     """
